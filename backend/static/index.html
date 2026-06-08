@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analog Signal Simulator</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Plotly.js CDN -->
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'instrument-dark': '#0B1120',
+                        'instrument-panel': '#1E293B',
+                        'instrument-screen': '#020617',
+                        'instrument-border': '#334155',
+                        'instrument-green': '#22C55E',
+                        'instrument-blue': '#3B82F6',
+                    },
+                    fontFamily: {
+                        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', "Liberation Mono", "Courier New", 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #0B1120; color: white; }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex flex-col items-center">
+    <div class="w-full max-w-7xl flex flex-col gap-6">
+        
+        <!-- Header -->
+        <header class="flex items-center gap-3 border-b border-instrument-border pb-4">
+            <div>
+                <h1 class="text-2xl font-bold tracking-widest text-slate-100 uppercase font-mono">Analog Signal Simulator</h1>
+                <p class="text-slate-500 text-sm font-mono">AI-Powered Circuit Analysis Instrument v1.0 (Static Mode)</p>
+            </div>
+        </header>
+
+        <!-- Main Controls Panel -->
+        <section class="bg-instrument-panel rounded-xl border border-instrument-border p-5 shadow-lg">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-4">
+                
+                <!-- CH 1 Generator -->
+                <div class="flex flex-col gap-3 bg-instrument-screen border border-instrument-border rounded p-4">
+                    <div class="flex justify-between items-center border-b border-instrument-border pb-2">
+                        <span class="text-sm font-bold text-instrument-green font-mono">CH 1 GENERATOR</span>
+                        <select id="type1" class="bg-instrument-panel text-xs text-slate-200 border border-instrument-border rounded p-1 outline-none font-mono" onchange="toggleType(1)">
+                            <option value="custom">Custom Expression</option>
+                            <option value="sine">Sine Wave</option>
+                            <option value="cosine">Cosine Wave</option>
+                            <option value="square">Square Wave</option>
+                            <option value="triangle">Triangle Wave</option>
+                            <option value="exp">Exponential</option>
+                        </select>
+                    </div>
+                    
+                    <div id="custom-box1" class="flex flex-col gap-1">
+                        <label class="text-xs text-slate-400 font-mono">Expression x(t) =</label>
+                        <input id="expression" type="text" value="5*sin(2*pi*100*t)" class="bg-instrument-panel border border-instrument-border rounded p-2 text-instrument-green font-mono text-lg focus:outline-none focus:border-instrument-green transition-colors" />
+                    </div>
+
+                    <div id="basic-box1" class="hidden grid grid-cols-2 gap-2">
+                        <div class="flex flex-col gap-1">
+                            <label class="text-[10px] text-slate-400 uppercase">Amplitude (V)</label>
+                            <div class="flex bg-instrument-panel border border-instrument-border rounded">
+                                <button class="px-2 bg-slate-800 hover:bg-slate-700 text-slate-300" onclick="stepVal('amp1', -1); syncAmp(1)">-</button>
+                                <input id="amp1" type="number" value="5" class="w-full bg-transparent text-center text-sm font-mono text-slate-200 outline-none" onchange="syncAmp(1)" />
+                                <button class="px-2 bg-slate-800 hover:bg-slate-700 text-slate-300" onclick="stepVal('amp1', 1); syncAmp(1)">+</button>
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label class="text-[10px] text-slate-400 uppercase">Vrms (V)</label>
+                            <div class="flex bg-instrument-panel border border-instrument-border rounded">
+                                <button class="px-2 bg-slate-800 hover:bg-slate-700 text-slate-300" onclick="stepVal('vrms1', -1); syncVrms(1)">-</button>
+                                <input id="vrms1" type="number" value="3.54" class="w-full bg-transparent text-center text-sm font-mono text-slate-200 outline-none" onchange="syncVrms(1)" />
+                                <button class="px-2 bg-slate-800 hover:bg-slate-700 text-slate-300" onclick="stepVal('vrms1', 1); syncVrms(1)">+</button>
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label class="text-[10px] text-slate-400 uppercase">Freq (Hz)</label>
+                            <div class="flex bg-instrument-panel border border-instrument-border rounded">
+                                <button class="px-2 bg-slate-800 hover:bg-slate-700 text-slate-300" onclick="stepVal('freq1', -10); syncFreq(1)">-</button>
+                                <input id="freq1" type="number" value="100" class="w-full bg-transparent text-center text-sm font-mono text-slate-200 outline-none" onchange="syncFreq(1)" />
+                                <button class="px-2 bg-slate-800 hover:bg-slate-700 text-slate-300" onclick="stepVal('freq1', 10); syncFreq(1)">+</button>
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label class="text-[10px] text-slate-400 uppercase">Period (s)</label>
+                            <div class="flex bg-instrument-panel border border-instrument-border rounded">
+                                <button class="px-2 bg-slate-800 hover:bg-slate-700 text-slate-300" onclick="stepVal('per1', -0.001); syncPer(1)">-</button>
+                                <input id="per1" type="number" value="0.01" step="0.001" class="w-full bg-transparent text-center text-sm font-mono text-slate-200 outline-none" onchange="syncPer(1)" />
+                                <button class="px-2 bg-slate-800 hover:bg-slate-700 text-slate-300" onclick="stepVal('per1', 0.001); syncPer(1)">+</button>
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-1 col-span-2">
+                            <label class="text-[10px] text-slate-400 uppercase">Phase (°)</label>
+                            <div class="flex bg-instrument-panel border border-instrument-border rounded">
+                                <button class="px-2 bg-slate-800 hover:bg-slate-700 text-slate-300" onclick="stepVal('phase1', -15)">-</button>
+                                <input id="phase1" type="number" value="0" class="w-full bg-transparent text-center text-sm font-mono text-slate-200 outline-none" />
+                                <button class="px-2 bg-slate-800 hover:bg-slate-700 text-slate-300" onclick="stepVal('phase1', 15)">+</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CH 2 Generator -->
+                <div class="flex flex-col gap-3 bg-instrument-screen border border-instrument-border rounded p-4">
+                    <div class="flex justify-between items-center border-b border-instrument-border pb-2">
+                        <span class="text-sm font-bold text-red-500 font-mono">CH 2 GENERATOR</span>
+                        <select id="type2" class="bg-instrument-panel text-xs text-slate-200 border border-instrument-border rounded p-1 outline-none font-mono" onchange="toggleType(2)">
+                            <option value="custom">Custom Expression</option>
+                            <option value="sine">Sine Wave</option>
+                            <option value="cosine">Cosine Wave</option>
+                            <option value="square">Square Wave</option>
+                            <option value="triangle">Triangle Wave</option>
+                            <option value="exp">Exponential</option>
+                        </select>
+                    </div>
+                    
+                    <div id="custom-box2" class="flex flex-col gap-1">
+                        <label class="text-xs text-slate-400 font-mono">Expression y(t) =</label>
+                        <input id="expression2" type="text" value="3*cos(2*pi*50*t)" class="bg-instrument-panel border border-instrument-border rounded p-2 text-red-500 font-mono text-lg focus:outline-none focus:border-red-500 transition-colors" />
+                    </div>
+
+                    <div id="basic-box2" class="hidden grid grid-cols-2 gap-2">
+                        <div class="flex flex-col gap-1">
+                            <label class="text-[10px] text-slate-400 uppercase">Amplitude (V)</label>
+                            <div class="flex bg-instrument-panel border border-instrument-border rounded">
+                                <button class="px-2 bg-slate-800 hover:bg-slate-700 text-slate-300" onclick="stepVal('amp2', -1); syncAmp(2)">-</button>
+                                <input id="amp2" type="number" value="3" class="w-full bg-transparent text-center text-sm font-mono text-slate-200 outline-none" onchange="syncAmp(2)" />
+                                <button class="px-2 bg-slate-800 hover:bg-slate-700 text-slate-300" onclick="stepVal('amp2', 1); syncAmp(2)">+</button>
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label class="text-[10px] text-slate-400 uppercase">Vrms (V)</label>
+                            <div class="flex bg-instrument-panel border border-instrument-border rounded">
+                                <button class="px-2 bg-slate-800 hover:bg-slate-700 text-slate-300" onclick="stepVal('vrms2', -1); syncVrms(2)">-</button>
+                                <input id="vrms2" type="number" value="2.12" class="w-full bg-transparent text-center text-sm font-mono text-slate-200 outline-none" onchange="syncVrms(2)" />
+                                <button class="px-2 bg-slate-800 hover:bg-slate-700 text-slate-300" onclick="stepVal('vrms2', 1); syncVrms(2)">+</button>
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label class="text-[10px] text-slate-400 uppercase">Freq (Hz)</label>
+                            <div class="flex bg-instrument-panel border border-instrument-border rounded">
+                                <button class="px-2 bg-slate-800 hover:bg-slate-700 text-slate-300" onclick="stepVal('freq2', -10); syncFreq(2)">-</button>
+                                <input id="freq2" type="number" value="50" class="w-full bg-transparent text-center text-sm font-mono text-slate-200 outline-none" onchange="syncFreq(2)" />
+                                <button class="px-2 bg-slate-800 hover:bg-slate-700 text-slate-300" onclick="stepVal('freq2', 10); syncFreq(2)">+</button>
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label class="text-[10px] text-slate-400 uppercase">Period (s)</label>
+                            <div class="flex bg-instrument-panel border border-instrument-border rounded">
+                                <button class="px-2 bg-slate-800 hover:bg-slate-700 text-slate-300" onclick="stepVal('per2', -0.001); syncPer(2)">-</button>
+                                <input id="per2" type="number" value="0.02" step="0.001" class="w-full bg-transparent text-center text-sm font-mono text-slate-200 outline-none" onchange="syncPer(2)" />
+                                <button class="px-2 bg-slate-800 hover:bg-slate-700 text-slate-300" onclick="stepVal('per2', 0.001); syncPer(2)">+</button>
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-1 col-span-2">
+                            <label class="text-[10px] text-slate-400 uppercase">Phase (°)</label>
+                            <div class="flex bg-instrument-panel border border-instrument-border rounded">
+                                <button class="px-2 bg-slate-800 hover:bg-slate-700 text-slate-300" onclick="stepVal('phase2', -15)">-</button>
+                                <input id="phase2" type="number" value="0" class="w-full bg-transparent text-center text-sm font-mono text-slate-200 outline-none" />
+                                <button class="px-2 bg-slate-800 hover:bg-slate-700 text-slate-300" onclick="stepVal('phase2', 15)">+</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Global Settings -->
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-4 border-t border-instrument-border pt-4">
+                <div class="md:col-span-4 flex flex-col gap-1">
+                    <label class="text-xs text-slate-400 font-mono">Duration (s)</label>
+                    <div class="flex bg-instrument-screen border border-instrument-border rounded">
+                        <button class="px-3 bg-slate-800 hover:bg-slate-700 text-slate-300" onclick="stepVal('duration', -0.01)">-</button>
+                        <input id="duration" type="number" value="0.1" step="0.01" class="w-full bg-transparent p-2 text-center text-slate-200 font-mono focus:outline-none" />
+                        <button class="px-3 bg-slate-800 hover:bg-slate-700 text-slate-300" onclick="stepVal('duration', 0.01)">+</button>
+                    </div>
+                </div>
+
+                <div class="md:col-span-4 flex flex-col gap-1">
+                    <label class="text-xs text-slate-400 font-mono">Sample Rate (Hz)</label>
+                    <div class="flex bg-instrument-screen border border-instrument-border rounded">
+                        <button class="px-3 bg-slate-800 hover:bg-slate-700 text-slate-300" onclick="stepVal('sampleRate', -1000)">-</button>
+                        <input id="sampleRate" type="number" value="10000" step="1000" class="w-full bg-transparent p-2 text-center text-slate-200 font-mono focus:outline-none" />
+                        <button class="px-3 bg-slate-800 hover:bg-slate-700 text-slate-300" onclick="stepVal('sampleRate', 1000)">+</button>
+                    </div>
+                </div>
+
+                <div class="md:col-span-4 flex items-end gap-2">
+                    <button id="set-btn" class="flex-1 h-[42px] bg-instrument-green hover:bg-green-400 text-instrument-dark font-bold rounded flex items-center justify-center transition-colors">
+                        SET
+                    </button>
+                    <button id="reset-btn" class="flex-1 h-[42px] bg-instrument-border hover:bg-slate-600 text-slate-200 font-bold rounded flex items-center justify-center transition-colors">
+                        RESET
+                    </button>
+                </div>
+            </div>
+            <div id="error-box" class="hidden mt-4 p-3 bg-red-500/10 border border-red-500/50 rounded text-red-400 text-sm font-mono"></div>
+        </section>
+
+        <!-- Properties Panels -->
+        <section class="w-full grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- CH 1 Properties -->
+            <div class="p-4 rounded-lg border-2 border-instrument-border bg-instrument-panel grid grid-cols-2 md:grid-cols-5 gap-2">
+                <div class="flex flex-col bg-instrument-screen p-2 rounded border border-instrument-border shadow-inner">
+                    <span class="text-[10px] text-slate-400 font-sans tracking-wide uppercase mb-1">Amplitude</span>
+                    <div class="flex items-baseline gap-1 font-mono text-instrument-green text-sm"><span id="val-amp1">0.00</span><span class="text-[10px] text-slate-500">V</span></div>
+                </div>
+                <div class="flex flex-col bg-instrument-screen p-2 rounded border border-instrument-border shadow-inner">
+                    <span class="text-[10px] text-slate-400 font-sans tracking-wide uppercase mb-1">Vrms</span>
+                    <div class="flex items-baseline gap-1 font-mono text-instrument-green text-sm"><span id="val-rms1">0.00</span><span class="text-[10px] text-slate-500">V</span></div>
+                </div>
+                <div class="flex flex-col bg-instrument-screen p-2 rounded border border-instrument-border shadow-inner">
+                    <span class="text-[10px] text-slate-400 font-sans tracking-wide uppercase mb-1">Frequency</span>
+                    <div class="flex items-baseline gap-1 font-mono text-instrument-green text-sm"><span id="val-freq1">0.00</span><span class="text-[10px] text-slate-500">Hz</span></div>
+                </div>
+                <div class="flex flex-col bg-instrument-screen p-2 rounded border border-instrument-border shadow-inner">
+                    <span class="text-[10px] text-slate-400 font-sans tracking-wide uppercase mb-1">Period</span>
+                    <div class="flex items-baseline gap-1 font-mono text-instrument-green text-sm"><span id="val-per1">0.00</span><span class="text-[10px] text-slate-500">s</span></div>
+                </div>
+                <div class="flex flex-col bg-instrument-screen p-2 rounded border border-instrument-border shadow-inner">
+                    <span class="text-[10px] text-slate-400 font-sans tracking-wide uppercase mb-1">Phase</span>
+                    <div class="flex items-baseline gap-1 font-mono text-instrument-green text-sm"><span id="val-phase1">0.00</span><span class="text-[10px] text-slate-500">°</span></div>
+                </div>
+            </div>
+
+            <!-- CH 2 Properties -->
+            <div class="p-4 rounded-lg border-2 border-instrument-border bg-instrument-panel grid grid-cols-2 md:grid-cols-5 gap-2">
+                <div class="flex flex-col bg-instrument-screen p-2 rounded border border-instrument-border shadow-inner">
+                    <span class="text-[10px] text-slate-400 font-sans tracking-wide uppercase mb-1">Amplitude</span>
+                    <div class="flex items-baseline gap-1 font-mono text-red-500 text-sm"><span id="val-amp2">0.00</span><span class="text-[10px] text-slate-500">V</span></div>
+                </div>
+                <div class="flex flex-col bg-instrument-screen p-2 rounded border border-instrument-border shadow-inner">
+                    <span class="text-[10px] text-slate-400 font-sans tracking-wide uppercase mb-1">Vrms</span>
+                    <div class="flex items-baseline gap-1 font-mono text-red-500 text-sm"><span id="val-rms2">0.00</span><span class="text-[10px] text-slate-500">V</span></div>
+                </div>
+                <div class="flex flex-col bg-instrument-screen p-2 rounded border border-instrument-border shadow-inner">
+                    <span class="text-[10px] text-slate-400 font-sans tracking-wide uppercase mb-1">Frequency</span>
+                    <div class="flex items-baseline gap-1 font-mono text-red-500 text-sm"><span id="val-freq2">0.00</span><span class="text-[10px] text-slate-500">Hz</span></div>
+                </div>
+                <div class="flex flex-col bg-instrument-screen p-2 rounded border border-instrument-border shadow-inner">
+                    <span class="text-[10px] text-slate-400 font-sans tracking-wide uppercase mb-1">Period</span>
+                    <div class="flex items-baseline gap-1 font-mono text-red-500 text-sm"><span id="val-per2">0.00</span><span class="text-[10px] text-slate-500">s</span></div>
+                </div>
+                <div class="flex flex-col bg-instrument-screen p-2 rounded border border-instrument-border shadow-inner">
+                    <span class="text-[10px] text-slate-400 font-sans tracking-wide uppercase mb-1">Phase</span>
+                    <div class="flex items-baseline gap-1 font-mono text-red-500 text-sm"><span id="val-phase2">0.00</span><span class="text-[10px] text-slate-500">°</span></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Oscilloscope Displays -->
+        <section class="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[400px] w-full">
+            <!-- Time Domain 1 -->
+            <div class="w-full h-full relative rounded-lg overflow-hidden border-2 border-instrument-border bg-instrument-screen shadow-[inset_0_0_20px_rgba(34,197,94,0.1)]">
+                <div class="absolute top-2 left-2 z-10 text-instrument-green text-xs font-mono font-bold tracking-widest uppercase">CH 1: x(t)</div>
+                <div id="plot-time1" class="w-full h-full"></div>
+            </div>
+
+            <!-- Time Domain 2 -->
+            <div class="w-full h-full relative rounded-lg overflow-hidden border-2 border-instrument-border bg-instrument-screen shadow-[inset_0_0_20px_rgba(239,68,68,0.1)]">
+                <div class="absolute top-2 left-2 z-10 text-red-500 text-xs font-mono font-bold tracking-widest uppercase">CH 2: y(t)</div>
+                <div id="plot-time2" class="w-full h-full"></div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        const formatVal = (val) => {
+            if (val === 0) return "0.00";
+            if (Math.abs(val) < 0.01 || Math.abs(val) > 10000) return val.toExponential(2);
+            return val.toFixed(2);
+        };
+
+        const timeLayout = {
+            autosize: true, margin: { l: 40, r: 20, t: 30, b: 40 },
+            paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)",
+            xaxis: {
+                color: "#475569", gridcolor: "rgba(34, 197, 94, 0.2)", zerolinecolor: "rgba(34, 197, 94, 0.5)",
+                title: { text: "Time (s)", font: { color: "#94A3B8", size: 10 } }, tickfont: { color: "#64748B", size: 10 },
+                showspikes: true, spikemode: "across", spikesnap: "cursor", showline: true, showgrid: true, spikedash: "dash", spikecolor: "rgba(34, 197, 94, 0.7)", spikethickness: 1,
+            },
+            yaxis: {
+                color: "#475569", gridcolor: "rgba(34, 197, 94, 0.2)", zerolinecolor: "rgba(34, 197, 94, 0.5)",
+                title: { text: "Amplitude", font: { color: "#94A3B8", size: 10 } }, tickfont: { color: "#64748B", size: 10 },
+                showspikes: true, spikemode: "across", spikesnap: "cursor", showline: true, showgrid: true, spikedash: "dash", spikecolor: "rgba(34, 197, 94, 0.7)", spikethickness: 1,
+            },
+            hovermode: "x unified", showlegend: false, font: { family: "monospace" },
+        };
+
+        const config = { responsive: true, displayModeBar: false };
+
+        const timeLayout2 = JSON.parse(JSON.stringify(timeLayout));
+        timeLayout2.xaxis.spikecolor = "rgba(239, 68, 68, 0.7)";
+        timeLayout2.yaxis.spikecolor = "rgba(239, 68, 68, 0.7)";
+        timeLayout2.xaxis.gridcolor = "rgba(239, 68, 68, 0.2)";
+        timeLayout2.yaxis.gridcolor = "rgba(239, 68, 68, 0.2)";
+        timeLayout2.xaxis.zerolinecolor = "rgba(239, 68, 68, 0.5)";
+        timeLayout2.yaxis.zerolinecolor = "rgba(239, 68, 68, 0.5)";
+
+        function toggleType(ch) {
+            const type = document.getElementById('type'+ch).value;
+            if(type === 'custom') {
+                document.getElementById('custom-box'+ch).classList.remove('hidden');
+                document.getElementById('basic-box'+ch).classList.add('hidden');
+            } else {
+                document.getElementById('custom-box'+ch).classList.add('hidden');
+                document.getElementById('basic-box'+ch).classList.remove('hidden');
+            }
+        }
+
+        function stepVal(id, step) {
+            const el = document.getElementById(id);
+            let val = parseFloat(el.value || 0) + step;
+            if (id === 'duration' && val < 0.01) val = 0.01;
+            if (id === 'sampleRate' && val < 100) val = 100;
+            el.value = Math.round(val * 10000) / 10000;
+        }
+
+        function syncAmp(ch) {
+            const amp = parseFloat(document.getElementById('amp'+ch).value || 0);
+            document.getElementById('vrms'+ch).value = (amp / Math.SQRT2).toFixed(2);
+        }
+        function syncVrms(ch) {
+            const vrms = parseFloat(document.getElementById('vrms'+ch).value || 0);
+            document.getElementById('amp'+ch).value = (vrms * Math.SQRT2).toFixed(2);
+        }
+        function syncFreq(ch) {
+            const freq = parseFloat(document.getElementById('freq'+ch).value || 1);
+            if(freq !== 0) document.getElementById('per'+ch).value = (1 / freq).toFixed(4);
+        }
+        function syncPer(ch) {
+            const per = parseFloat(document.getElementById('per'+ch).value || 0.01);
+            if(per !== 0) document.getElementById('freq'+ch).value = (1 / per).toFixed(2);
+        }
+
+        function buildExpression(ch) {
+            const type = document.getElementById('type'+ch).value;
+            if (type === 'custom') {
+                return ch === 1 ? document.getElementById("expression").value : document.getElementById("expression2").value;
+            }
+            
+            const A = parseFloat(document.getElementById('amp'+ch).value || 0);
+            const f = parseFloat(document.getElementById('freq'+ch).value || 0);
+            const p_deg = parseFloat(document.getElementById('phase'+ch).value || 0);
+            const p = p_deg === 0 ? '' : (p_deg > 0 ? ` + ${p_deg}*pi/180` : ` - ${Math.abs(p_deg)}*pi/180`);
+            const wt = `2*pi*${f}*t`;
+            
+            switch(type) {
+                case 'sine': return `${A}*sin(${wt}${p})`;
+                case 'cosine': return `${A}*cos(${wt}${p})`;
+                case 'square': return `${A}*sign(sin(${wt}${p}))`;
+                case 'triangle': return `(2*${A}/pi)*asin(sin(${wt}${p}))`;
+                case 'exp': return `${A}*exp(-${f}*t)`;
+            }
+            return "";
+        }
+
+        async function fetchSignal(expr, dur, sr) {
+            if (!expr || expr.trim() === "") return null;
+            const res = await fetch("/api/simulate", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ expression: expr, duration: parseFloat(dur), sample_rate: parseFloat(sr) })
+            });
+            return await res.json();
+        }
+
+        async function simulate() {
+            const expr1 = buildExpression(1);
+            const expr2 = buildExpression(2);
+            const dur = document.getElementById("duration").value;
+            const sr = document.getElementById("sampleRate").value;
+            const errBox = document.getElementById("error-box");
+
+            try {
+                const [data1, data2] = await Promise.all([
+                    fetchSignal(expr1, dur, sr),
+                    fetchSignal(expr2, dur, sr)
+                ]);
+                
+                errBox.classList.add("hidden");
+                
+                if (data1) {
+                    if (data1.error) {
+                        errBox.textContent = "CH 1 Error: " + data1.error;
+                        errBox.classList.remove("hidden");
+                    } else if (data1.properties) {
+                        document.getElementById("val-amp1").textContent = formatVal(data1.properties.amplitude);
+                        document.getElementById("val-rms1").textContent = formatVal(data1.properties.rms);
+                        document.getElementById("val-freq1").textContent = formatVal(data1.properties.frequency);
+                        document.getElementById("val-per1").textContent = formatVal(data1.properties.time_period);
+                        document.getElementById("val-phase1").textContent = formatVal(data1.properties.phase_shift);
+
+                        Plotly.react('plot-time1', [{
+                            x: data1.time, y: data1.amplitude, type: 'scatter', mode: 'lines', line: { color: '#22C55E', width: 2 }
+                        }], timeLayout, config);
+                    }
+                } else {
+                    Plotly.react('plot-time1', [], timeLayout, config);
+                }
+
+                if (data2) {
+                    if (data2.error) {
+                        errBox.textContent = (errBox.classList.contains("hidden") ? "" : errBox.textContent + " | ") + "CH 2 Error: " + data2.error;
+                        errBox.classList.remove("hidden");
+                    } else if (data2.properties) {
+                        document.getElementById("val-amp2").textContent = formatVal(data2.properties.amplitude);
+                        document.getElementById("val-rms2").textContent = formatVal(data2.properties.rms);
+                        document.getElementById("val-freq2").textContent = formatVal(data2.properties.frequency);
+                        document.getElementById("val-per2").textContent = formatVal(data2.properties.time_period);
+                        document.getElementById("val-phase2").textContent = formatVal(data2.properties.phase_shift);
+
+                        Plotly.react('plot-time2', [{
+                            x: data2.time, y: data2.amplitude, type: 'scatter', mode: 'lines', line: { color: '#EF4444', width: 2 }
+                        }], timeLayout2, config);
+                    }
+                } else {
+                    Plotly.react('plot-time2', [], timeLayout2, config);
+                }
+            } catch (err) {
+                errBox.textContent = "Error: " + (err.message || err.toString());
+                errBox.classList.remove("hidden");
+                console.error(err);
+            }
+        }
+
+        // Action setup
+        document.getElementById("set-btn").addEventListener("click", simulate);
+
+        // Reset
+        document.getElementById("reset-btn").addEventListener("click", () => {
+            document.getElementById("expression").value = "";
+            document.getElementById("expression2").value = "";
+            document.getElementById("duration").value = "0.1";
+            document.getElementById("sampleRate").value = "10000";
+            
+            ["val-amp1", "val-rms1", "val-freq1", "val-per1", "val-phase1", "val-amp2", "val-rms2", "val-freq2", "val-per2"].forEach(id => {
+                document.getElementById(id).textContent = "0.00";
+            });
+            
+            Plotly.react('plot-time1', [], timeLayout, config);
+            Plotly.react('plot-time2', [], timeLayout2, config);
+        });
+
+        // Initial Load
+        simulate();
+    </script>
+</body>
+</html>
