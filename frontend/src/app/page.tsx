@@ -48,7 +48,7 @@ export default function Home() {
     setLoading(true);
     setError(null);
     try {
-      let endpoint = "http://localhost:8000/api/simulate";
+      let endpoint = "https://analog-simulator-api.onrender.com/api/simulate";
       let payload: any = {
         duration: parseFloat(duration),
         sample_rate: parseFloat(sampleRate),
@@ -57,7 +57,7 @@ export default function Home() {
       if (mode === "basic") {
         payload.expression = expression;
       } else if (mode === "am") {
-        endpoint = "http://localhost:8000/api/am";
+        endpoint = "https://analog-simulator-api.onrender.com/api/am";
         payload = {
           ...payload,
           waveform: waveform,
@@ -71,7 +71,7 @@ export default function Home() {
           rc_constant: parseFloat(rcConst),
         };
       } else if (mode === "fm") {
-        endpoint = "http://localhost:8000/api/fm";
+        endpoint = "https://analog-simulator-api.onrender.com/api/fm";
         payload = {
           ...payload,
           waveform: waveform,
