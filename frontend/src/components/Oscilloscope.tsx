@@ -83,7 +83,7 @@ export default function Oscilloscope({ time, amplitude, traces, simulationSpeed 
           line: {
             color: trace.color,
             width: 2,
-            dash: trace.style === "dash" ? "dash" : "solid",
+            dash: (trace.style === "dash" ? "dash" : "solid") as any,
           },
         }))
       : [
