@@ -346,7 +346,7 @@ export default function Home() {
             {signalData?.overmodulated && (
               <div className="bg-red-500/10 border border-red-500 text-red-500 px-4 py-2 rounded font-mono text-sm flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4" />
-                <strong>WARNING:</strong> Overmodulation Detected ($\mu > 1.0$). Distortion will occur in envelope detection.
+                <strong>WARNING:</strong> Overmodulation Detected ($\mu &gt; 1.0$). Distortion will occur in envelope detection.
               </div>
             )}
             
